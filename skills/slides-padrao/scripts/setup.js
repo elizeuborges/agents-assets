@@ -66,17 +66,20 @@ console.log("4. Conferência visual (opcional; nada é instalado)");
 const { detectEngines } = require("./render");
 const engines = detectEngines();
 if (!engines.length) {
-  warn("nenhuma ferramenta de conferência (PowerPoint no Windows ou LibreOffice): os decks serão gerados normalmente, mas precisarão ser conferidos manualmente");
+  warn("nenhuma ferramenta de conferência (PowerPoint no Windows, também pelo WSL, ou LibreOffice): os decks serão gerados normalmente, mas precisarão ser conferidos manualmente");
 } else {
   const e = engines[0];
   ok(`conferência com ${e.label}` + (e.pngs ? ", com uma imagem por slide" : ", só em PDF (o poppler não foi encontrado)"));
-  if (e.name === "libreoffice" && tokens && !WIN) {
+  if (e.name === "libreoffice" && e.windows) ok("o LibreOffice do Windows usa as fontes do Windows, que já trazem a Calibri");
+  else if (e.name === "libreoffice" && tokens && !WIN) {
     // o LibreOffice troca fontes ausentes, o que muda a quebra de linha em relação ao PowerPoint
     const font = tokens.fonts.body, r = run("fc-list", []);
     if (r.status === 0) {
       const all = r.stdout.toLowerCase();
       if (all.includes(font.toLowerCase())) ok(`fonte ${font} instalada`);
       else if (font === "Calibri" && all.includes("carlito")) ok("Carlito instalada (mesmas métricas da Calibri)");
+      else if (font === "Calibri" && process.platform === "linux") ok("Calibri ausente: a conferência usa a Carlito de fonts/ (mesmas métricas)");
+      else if (font === "Calibri") warn("Calibri ausente: para a quebra de linha das imagens bater com o PowerPoint, instale as fontes de fonts/ (Carlito, mesmas métricas)");
       else warn(`fonte ${font} não instalada: nas imagens a quebra de linha pode diferir do PowerPoint`);
     }
   }

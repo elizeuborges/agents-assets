@@ -584,6 +584,368 @@ async function createDeck(opts = {}) {
     });
   }
 
+  // ---------- apoio dos blocos abaixo ----------
+  // Faixa de itens aceita por um bloco; fora dela, erro (o gerador acrescenta o slide à mensagem).
+  const need = (block, list, min, max, what = "itens") => {
+    const n = (list || []).length;
+    if (n < min || n > max) throw new Error(`${block}: de ${min} a ${max} ${what} (recebeu ${n})`);
+  };
+  // Cor de texto legível sobre um fundo: escuro em fundo claro, claro em fundo escuro.
+  const onColor = (hex) => {
+    const [r, g, b] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+      .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.36 ? K.dk2 : K.lt1;
+  };
+  const lineH = (fs) => (fs * 1.2) / 72;   // altura de uma linha de texto (pol.)
+
+  // Camadas empilhadas, em que cada uma se apoia na de baixo: { items: [{ icon, title, text, tags }],
+  // order: "top-down" | "bottom-up", highlight: [i] }. Com tags, as pílulas substituem o texto.
+  async function layers(s, { items, order = "top-down", highlight = [] }, { area } = {}) {
+    need("layers", items, 2, 6, "camadas");
+    const A = areaOf(s, area);
+    const n = items.length, gap = 0.12;
+    const h = Math.min((A.h - gap * (n - 1)) / n, 1.0);
+    const oy = (A.h - (n * h + gap * (n - 1))) / 2;
+    const lw = Math.max(A.w * (A.w < 7 ? 0.38 : 0.25), 1.6), pad = 0.18;
+    for (const [i, it] of items.entries()) {
+      const pos = order === "bottom-up" ? n - 1 - i : i;
+      const y = A.y + oy + pos * (h + gap), hl = highlight.includes(i);
+      box(s, A.x, y, A.w, h, hl ? K.dk2 : K.lt2, hl ? { shadow: shadow() } : {});
+      box(s, A.x, y, lw, h, hl ? K.accent4 : K.accent6);
+      const d = Math.min(0.46, h - 0.24);
+      if (it.icon) await circleIcon(s, it.icon, A.x + pad, y + (h - d) / 2, d, hl ? K.accent1 : K.dk2);
+      const tx = A.x + pad + (it.icon ? d + 0.14 : 0);
+      text(s, it.title, { x: tx, y, w: A.x + lw - tx - 0.1, h, fontSize: 14, bold: true, color: hl ? K.lt1 : K.dk2, valign: "middle" });
+      const rx = A.x + lw + 0.25, rw = A.w - lw - 0.45;
+      if (it.tags && it.tags.length) {
+        // pílulas lado a lado, quebrando linha quando não cabem; o conjunto fica centralizado na vertical
+        const ph = 0.32, pg = 0.1, fs = 11;
+        const rows = [[]];
+        let cur = 0;
+        for (const t of it.tags.slice(0, 6)) {
+          const pw = Math.min(rw, String(t).length * fs * 0.52 / 72 + 0.36);
+          if (cur && cur + pw > rw) { rows.push([]); cur = 0; }
+          rows[rows.length - 1].push({ t, pw }); cur += pw + pg;
+        }
+        let py = y + (h - (rows.length * ph + (rows.length - 1) * 0.08)) / 2;
+        for (const row of rows) {
+          let px = rx;
+          for (const { t, pw } of row) {
+            s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: px, y: py, w: pw, h: ph, rectRadius: ph / 2,
+              fill: { color: hl ? K.accent4 : K.lt1 }, line: { color: hl ? K.accent4 : K.border, width: 0.75 } });
+            text(s, String(t), { x: px, y: py, w: pw, h: ph, fontSize: fs, color: hl ? K.lt1 : K.dk2, align: "center", valign: "middle" });
+            px += pw + pg;
+          }
+          py += ph + 0.08;
+        }
+      } else if (it.text) {
+        text(s, it.text, { x: rx, y, w: rw, h, fontSize: 12, color: hl ? K.lt1 : K.dk1, valign: "middle" });
+      }
+    }
+  }
+
+  // Ciclo contínuo, em sentido horário a partir do topo: { items: [{ icon, title, text }], center, centerIcon, highlight: [i] }.
+  // Em área estreita (coluna), o raio diminui e só o título aparece.
+  async function cycle(s, { items, center, centerIcon, highlight = [] }, { area } = {}) {
+    need("cycle", items, 3, 6);
+    const A = areaOf(s, area);
+    const n = items.length, narrow = A.w < 7;
+    const d = narrow ? 0.6 : 0.8, labelH = narrow ? 0.32 : 0.85, minLabelW = narrow ? 1.3 : 2.2;
+    const ang = (i) => -Math.PI / 2 + (i * 2 * Math.PI) / n;
+    const vertical = (i) => Math.abs(Math.cos(ang(i))) < 0.3;   // nó em cima ou embaixo: rótulo acima ou abaixo
+    // extensão vertical do desenho (nós e rótulos) para um raio, relativa ao centro
+    const extent = (R) => {
+      let top = -R - 0.05, bot = R + 0.05;   // o anel também ocupa espaço onde não há nó (n ímpar, embaixo)
+      for (let i = 0; i < n; i++) {
+        const y = R * Math.sin(ang(i)), up = vertical(i) && Math.sin(ang(i)) < 0, down = vertical(i) && !up;
+        top = Math.min(top, y - d / 2 - (up ? labelH + 0.05 : 0));
+        bot = Math.max(bot, y + d / 2 + (down ? labelH + 0.05 : 0));
+      }
+      return { top, bot };
+    };
+    let R = 2.2;
+    const maxRw = A.w / 2 - d / 2 - 0.15 - minLabelW;   // os rótulos laterais precisam de largura mínima
+    while (R > 0.6 && (R > maxRw || extent(R).bot - extent(R).top > A.h)) R -= 0.05;
+    const { top, bot } = extent(R);
+    const cx = A.x + A.w / 2, cy = A.y + (A.h - (bot - top)) / 2 - top;
+    // anel de fundo e setas curtas no meio de cada arco, no sentido do ciclo
+    s.addShape(pres.shapes.OVAL, { x: cx - R, y: cy - R, w: 2 * R, h: 2 * R, fill: { type: "none" }, line: { color: K.accent6, width: 2.5 } });
+    const da = Math.min(0.2 / R, Math.PI / n / 2);
+    for (let i = 0; i < n; i++) {
+      const m = ang(i) + Math.PI / n;
+      arrow(s, cx + R * Math.cos(m - da), cy + R * Math.sin(m - da), cx + R * Math.cos(m + da), cy + R * Math.sin(m + da), { color: K.accent1, width: 2.25 });
+    }
+    if (center) {
+      const cw = Math.max(2 * R - d - 0.3, 1);
+      const ih = centerIcon ? Math.min(0.42, R * 0.35) : 0;
+      if (centerIcon) await icon(s, centerIcon, cx - ih / 2, cy - ih - 0.06, ih, K.accent4);
+      text(s, center, { x: cx - cw / 2, y: centerIcon ? cy : cy - 0.4, w: cw, h: centerIcon ? 0.7 : 0.8, fontSize: narrow ? 12 : 15, bold: true, color: K.dk2, align: "center", valign: centerIcon ? "top" : "middle" });
+    }
+    for (const [i, it] of items.entries()) {
+      const a = ang(i), nx = cx + R * Math.cos(a), ny = cy + R * Math.sin(a), hl = highlight.includes(i);
+      const bg = hl ? K.accent1 : K.dk2;
+      if (it.icon) await circleIcon(s, it.icon, nx - d / 2, ny - d / 2, d, bg);
+      else {
+        s.addShape(pres.shapes.OVAL, { x: nx - d / 2, y: ny - d / 2, w: d, h: d, fill: { color: bg }, line: { color: K.lt1, width: 1.5 } });
+        text(s, String(i + 1), { x: nx - d / 2, y: ny - d / 2, w: d, h: d, fontSize: narrow ? 14 : 18, bold: true, color: K.lt1, align: "center", valign: "middle" });
+      }
+      const runs = [{ text: it.title, options: { bold: true, fontSize: narrow ? 11.5 : 13, color: hl ? K.accent4 : K.dk2, breakLine: !narrow && !!it.text } },
+        ...(!narrow && it.text ? [{ text: it.text, options: { fontSize: 10.5, color: K.dk1 } }] : [])];
+      if (vertical(i)) {
+        const w = Math.min(A.w, narrow ? 2.4 : 3.4), up = Math.sin(a) < 0;
+        text(s, runs, { x: nx - w / 2, y: up ? ny - d / 2 - 0.05 - labelH : ny + d / 2 + 0.05, w, h: labelH, align: "center", valign: up ? "bottom" : "top" });
+      } else {
+        const right = Math.cos(a) > 0;
+        const room = right ? A.x + A.w - (nx + d / 2 + 0.12) : nx - d / 2 - 0.12 - A.x;
+        const w = Math.min(room, narrow ? 2.4 : 3.6);
+        text(s, runs, { x: right ? nx + d / 2 + 0.12 : nx - d / 2 - 0.12 - w, y: ny - labelH / 2, w, h: labelH, align: right ? "left" : "right", valign: "middle" });
+      }
+    }
+  }
+
+  // Opções para decisão, com a recomendada em destaque:
+  // { items: [{ label, title, text, pros: [...], cons: [...], facts: [{ label, value }] }], recommended: i }
+  async function options(s, { items, recommended = -1 }, { area } = {}) {
+    need("options", items, 2, 4, "opções");
+    const A = areaOf(s, area);
+    const n = items.length, gap = 0.25, pad = 0.2;
+    const w = (A.w - gap * (n - 1)) / n, iw = w - 2 * pad;
+    const small = w < 3.2, fsT = small ? 13.5 : 15, fsX = small ? 10.5 : 11.5, fsL = small ? 10 : 11;
+    // altura de cada seção pelo item mais longo, para as seções ficarem alinhadas entre as colunas
+    const hText = (t, ww, fs) => (t ? estLines(t, ww, fs) * lineH(fs) : 0);
+    const hList = (list, fs) => (list || []).reduce((t, x) => t + hText(x, iw - 0.3, fs) + 0.06, 0);
+    const max = (f) => Math.max(0, ...items.map(f));
+    const titleH = max((it) => hText(it.title, iw, fsT)) + 0.08;
+    const textH = max((it) => hText(it.text, iw, fsX));
+    const prosH = max((it) => hList(it.pros, fsL)), consH = max((it) => hList(it.cons, fsL));
+    const nFacts = max((it) => (it.facts || []).length), factsH = nFacts ? nFacts * 0.34 + 0.2 : 0;
+    const top = 0.3 + 0.32;   // eyebrow e selo
+    const body = titleH + (textH ? textH + 0.15 : 0) + (prosH ? prosH + 0.12 : 0) + (consH ? consH + 0.12 : 0);
+    const H = Math.min(A.h, top + body + factsH + pad);
+    const oy = (A.h - H) / 2;
+    for (const [i, it] of items.entries()) {
+      const x = A.x + i * (w + gap), y0 = A.y + oy, rec = i === recommended;
+      box(s, x, y0, w, H, rec ? K.lt1 : K.lt2, rec ? { line: { color: K.accent1, width: 2.5 }, shadow: shadow() } : {});
+      if (rec) {
+        const bw = Math.min(1.35, iw * 0.55);
+        box(s, x + w - pad - bw, y0 + 0.16, bw, 0.3, K.accent1);
+        text(s, "RECOMENDADA", { x: x + w - pad - bw, y: y0 + 0.16, w: bw, h: 0.3, fontSize: 8.5, bold: true, charSpacing: 1, color: onColor(K.accent1), align: "center", valign: "middle" });
+      }
+      if (it.label) eyebrow(s, it.label, x + pad, y0 + 0.16, iw - (rec ? Math.min(1.35, iw * 0.55) + 0.1 : 0));
+      let y = y0 + top;
+      text(s, it.title, { x: x + pad, y, w: iw, h: titleH, fontSize: fsT, bold: true, color: K.dk2 });
+      y += titleH;
+      if (textH) { if (it.text) text(s, it.text, { x: x + pad, y, w: iw, h: textH, fontSize: fsX }); y += textH + 0.15; }
+      for (const [list, h, ic, color] of [[it.pros, prosH, "FaCheck", K.accent1], [it.cons, consH, "FaTimes", K.danger]]) {
+        if (!h) continue;
+        let ly = y;
+        for (const t of list || []) {
+          const th = hText(t, iw - 0.3, fsL);
+          await icon(s, ic, x + pad, ly + 0.03, 0.16, color);
+          text(s, t, { x: x + pad + 0.28, y: ly, w: iw - 0.28, h: th, fontSize: fsL });
+          ly += th + 0.06;
+        }
+        y += h + 0.12;
+      }
+      if (nFacts) {
+        const fy = y0 + H - pad - nFacts * 0.34;
+        s.addShape(pres.shapes.LINE, { x: x + pad, y: fy - 0.1, w: iw, h: 0, line: { color: K.border, width: 1 } });
+        (it.facts || []).forEach((f, j) => {
+          text(s, f.label, { x: x + pad, y: fy + j * 0.34, w: iw * 0.5, h: 0.3, fontSize: 10, color: K.accent5, valign: "middle" });
+          text(s, String(f.value), { x: x + pad + iw * 0.4, y: fy + j * 0.34, w: iw * 0.6, h: 0.3, fontSize: small ? 12 : 13.5, bold: true, color: K.dk2, align: "right", valign: "middle" });
+        });
+      }
+    }
+  }
+
+  // Prós e contras de uma única proposta, com veredito opcional:
+  // { pros: { title, items }, cons: { title, items }, verdict: { title, text } }. Em coluna estreita, prós sobre contras.
+  async function prosCons(s, { pros = {}, cons = {}, verdict }, { area } = {}) {
+    need("prosCons", pros.items, 1, 6, "prós");
+    need("prosCons", cons.items, 1, 6, "contras");
+    const A = areaOf(s, area);
+    const narrow = A.w < 7, gap = 0.3, vh = verdict ? 0.75 : 0, vg = verdict ? 0.3 : 0;
+    const hh = 0.5, pad = 0.2, rg = 0.18, cw = narrow ? A.w : (A.w - gap) / 2, tw = cw - 2 * pad - 0.35;
+    // altura de uma lista num corpo de fonte; o corpo diminui até as listas caberem na área
+    const rowsOf = (list, f) => list.map((x) => estLines(x, tw, f) * lineH(f));
+    const sideH = (list, f) => hh + 0.15 + rowsOf(list, f).reduce((t, r) => t + r + rg, -rg) + 2 * pad;
+    const totalH = (f) => (narrow ? sideH(pros.items, f) + 0.3 + sideH(cons.items, f) : Math.max(sideH(pros.items, f), sideH(cons.items, f))) + vg + vh;
+    let fs = 12.5;
+    while (fs > 10 && totalH(fs) > A.h) fs -= 0.5;
+    const y0 = A.y + Math.max(0, (A.h - totalH(fs)) / 2);
+    const side = async (x, y, { title, items: list }, ic, color) => {
+      await icon(s, ic, x, y + 0.09, 0.32, color);
+      text(s, title, { x: x + 0.45, y, w: cw - 0.45, h: hh - 0.06, fontSize: 16, bold: true, color: K.dk2, valign: "middle" });
+      s.addShape(pres.shapes.RECTANGLE, { x, y: y + hh, w: cw, h: 0.05, fill: { color }, line: { color, width: 0 } });
+      const by = y + hh + 0.15, rows = rowsOf(list, fs);
+      box(s, x, by, cw, sideH(list, fs) - hh - 0.15, K.lt2);
+      let ry = by + pad;
+      for (const [i, t] of list.entries()) {
+        await icon(s, ic, x + pad, ry + 0.03, 0.2, color);
+        text(s, t, { x: x + pad + 0.35, y: ry, w: tw, h: rows[i], fontSize: fs });
+        ry += rows[i] + rg;
+      }
+      return y + sideH(list, fs);
+    };
+    const pEnd = await side(A.x, y0, { title: pros.title || "Prós", items: pros.items }, "FaCheckCircle", K.accent1);
+    const cEnd = await side(narrow ? A.x : A.x + cw + gap, narrow ? pEnd + 0.3 : y0, { title: cons.title || "Contras", items: cons.items }, "FaTimesCircle", K.danger);
+    if (verdict) await callout(s, { title: verdict.title, text: verdict.text, icon: verdict.icon, variant: "dark" }, { area: { x: A.x, y: Math.max(pEnd, cEnd) + vg, w: A.w, h: vh } });
+  }
+
+  // Lê um número escrito em pt-BR ou en ("1.200", "12,5", "R$ 3 mi" → 3); NaN se não houver número.
+  const parseNum = (v) => {
+    let t = String(v).replace(/[^\d.,-]/g, "");
+    if (t.includes(",") && t.includes(".")) t = t.replace(/\./g, "").replace(",", ".");
+    else if (t.includes(",")) t = t.replace(",", ".");
+    else if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, "");
+    return t ? Number(t) : NaN;
+  };
+
+  // Funil: { items: [{ label, value, text }], highlight: [i], showRate }. Faixas cada vez mais estreitas;
+  // o texto fica à direita, ligado à faixa por uma linha-guia. showRate mostra a taxa entre etapas numéricas.
+  function funnel(s, { items, highlight = [], showRate = false }, { area } = {}) {
+    need("funnel", items, 3, 6, "etapas");
+    const A0 = areaOf(s, area), rw = showRate ? 0.85 : 0;   // coluna das taxas, à esquerda do funil
+    const A = { x: A0.x + rw, y: A0.y, w: A0.w - rw, h: A0.h };
+    const n = items.length, narrow = A0.w < 7, hasText = items.some((it) => it.text);
+    const fw = A.w * (hasText ? (narrow ? 0.6 : 0.5) : (narrow ? 1 : 0.7));
+    const fx = hasText ? A.x + fw / 2 : A.x + A.w / 2, gap = 0.08;
+    const h = Math.min((A.h - gap * (n - 1)) / n, 0.95), oy = (A.h - (n * h + gap * (n - 1))) / 2;
+    const minW = fw * 0.38, wOf = (i) => fw - ((fw - minW) * i) / (n - 1);
+    // sem destaque, as faixas escurecem de cima para baixo; com destaque, só as destacadas ficam escuras
+    const ramp = [K.accent6, K.accent2, K.accent1, K.accent4, K.dk2];
+    const fillOf = (i) => (highlight.length ? (highlight.includes(i) ? K.dk2 : K.accent6) : ramp[Math.round((i * (ramp.length - 1)) / (n - 1))]);
+    const tx = fx + fw / 2 + 0.45;
+    items.forEach((it, i) => {
+      const w = wOf(i), x = fx - w / 2, y = A.y + oy + i * (h + gap), fill = fillOf(i), fg = onColor(fill);
+      box(s, x, y, w, h, fill, highlight.includes(i) ? { shadow: shadow() } : {});
+      const fsV = Math.min(22, h * 30), fsL = narrow ? 10.5 : 12;
+      text(s, [{ text: String(it.value), options: { bold: true, fontSize: fsV, color: fg, breakLine: w < 3 } },
+        { text: (w < 3 ? "" : "  ") + it.label, options: { fontSize: fsL, color: fg } }],
+      { x: x + 0.1, y, w: w - 0.2, h, align: "center", valign: "middle" });
+      if (it.text) {
+        s.addShape(pres.shapes.LINE, { x: x + w + 0.06, y: y + h / 2, w: tx - 0.1 - (x + w + 0.06), h: 0, line: { color: K.border, width: 1, dashType: "dash" } });
+        text(s, it.text, { x: tx, y, w: A.x + A.w - tx, h, fontSize: narrow ? 10 : 11.5, valign: "middle" });
+      }
+      if (showRate && i > 0) {
+        const a = parseNum(items[i - 1].value), b = parseNum(it.value);
+        if (a > 0 && Number.isFinite(b)) {
+          const r = (b / a) * 100;
+          const label = "↓ " + r.toLocaleString("pt-BR", { maximumFractionDigits: r < 10 ? 1 : 0 }) + "%";
+          text(s, label, { x: A0.x, y: y - gap / 2 - 0.15, w: rw - 0.1, h: 0.3, fontSize: 10.5, bold: true, color: K.accent4, align: "right", valign: "middle" });
+        }
+      }
+    });
+  }
+
+  // Roadmap em trilhas: { periods: ["T1", ...], today, lanes: [{ title, icon,
+  //   items: [{ title, start, end, style: "done"|"doing"|"planned", milestone }] }] }.
+  // start e end são índices de período (aceitam frações). Devolve avisos de títulos que não cabem na barra.
+  const ROAD_STYLES = ["done", "doing", "planned"];
+  async function roadmap(s, { periods, lanes, today }, { area } = {}) {
+    need("roadmap", periods, 2, 8, "períodos");
+    need("roadmap", lanes, 1, 6, "trilhas");
+    const A = areaOf(s, area);
+    const P = periods.length, narrow = A.w < 7, warns = [];
+    const lw = narrow ? 1.3 : 2.0, gx = A.x + lw + 0.1, gw = A.x + A.w - gx, pw = gw / P;
+    const fs = narrow ? 9.5 : 10.5, cw = (fs * 0.5) / 72;   // largura média de um caractere (pol.)
+    // distribui os itens de cada trilha em sub-linhas, para itens sobrepostos não se cobrirem
+    const packed = lanes.map((ln, li) => {
+      const rows = [];
+      for (const it of ln.items || []) {
+        const st = it.style || "planned";
+        if (!ROAD_STYLES.includes(st)) throw new Error(`roadmap: style "${st}" inválido em "${it.title}" (${ROAD_STYLES.join(", ")})`);
+        const end = it.milestone ? it.start : it.end;
+        if (!(it.start >= 0 && end <= P && (it.milestone || it.start < end))) throw new Error(`roadmap: "${it.title}" na trilha ${li + 1} precisa de 0 ≤ start < end ≤ ${P}`);
+        // título que não cabe em duas linhas da barra vai para o lado dela, e o espaço dele conta na sobreposição
+        const labelW = (0.2 + String(it.title).length * cw) / pw;
+        const outside = !it.milestone && estLines(it.title, (end - it.start) * pw - 0.24, fs) > 2;
+        if (outside) warns.push(`roadmap: "${it.title}" não cabe na barra e foi escrito ao lado dela (encurte o título ou alongue o período)`);
+        const span = it.milestone ? [it.start - 0.15, it.start + 0.2 / pw + labelW] : [it.start, outside ? end + labelW : end];
+        let r = rows.findIndex((row) => row.every((o) => span[0] >= o.span[1] || span[1] <= o.span[0]));
+        if (r < 0) { rows.push([]); r = rows.length - 1; }
+        rows[r].push({ it, span, st, outside });
+      }
+      return rows.length ? rows : [[]];
+    });
+    const sub = packed.reduce((t, r) => t + r.length, 0);
+    const hh = 0.4, todayH = today != null ? 0.28 : 0;
+    const rh = Math.min((A.h - hh - 0.1 - todayH) / sub, 0.6), bh = rh - 0.12;
+    const totalH = hh + 0.1 + sub * rh + todayH, y0 = A.y + (A.h - totalH) / 2, gy = y0 + hh + 0.1, gb = gy + sub * rh;
+    // períodos: cabeçalho, faixas alternadas e linhas de divisão
+    periods.forEach((p, j) => {
+      const x = gx + j * pw;
+      box(s, x + 0.03, y0, pw - 0.06, hh, K.dk2);
+      text(s, String(p), { x: x + 0.03, y: y0, w: pw - 0.06, h: hh, fontSize: narrow ? 10 : 12, bold: true, color: K.lt1, align: "center", valign: "middle" });
+      if (j % 2) s.addShape(pres.shapes.RECTANGLE, { x, y: gy, w: pw, h: gb - gy, fill: { color: K.zebra }, line: { color: K.zebra, width: 0 } });
+    });
+    let y = gy;
+    for (const [li, ln] of lanes.entries()) {
+      const laneH = packed[li].length * rh;
+      const d = Math.min(0.3, rh - 0.18);
+      if (ln.icon) await icon(s, ln.icon, A.x, y + (laneH - d) / 2, d, K.accent4);
+      const lx = A.x + (ln.icon ? d + 0.12 : 0);
+      text(s, ln.title, { x: lx, y, w: gx - 0.1 - lx, h: laneH, fontSize: narrow ? 10.5 : 12, bold: true, color: K.dk2, valign: "middle" });
+      for (const [r, row] of packed[li].entries()) {
+        const by = y + r * rh + (rh - bh) / 2;
+        for (const { it, st, outside } of row) {
+          if (it.milestone) {
+            const mx = gx + it.start * pw, m = Math.min(0.26, bh);
+            s.addShape(pres.shapes.DIAMOND, { x: mx - m / 2, y: by + (bh - m) / 2, w: m, h: m, fill: { color: K.accent3 }, line: { color: K.lt1, width: 1 } });
+            text(s, it.title, { x: mx + m / 2 + 0.06, y: by, w: Math.max(0.5, gx + gw - mx - m / 2 - 0.06), h: bh, fontSize: fs, bold: true, color: K.dk2, valign: "middle" });
+            continue;
+          }
+          const x = gx + it.start * pw + 0.04, w = (it.end - it.start) * pw - 0.08;
+          const fill = { done: K.dk2, doing: K.accent1, planned: K.lt1 }[st];
+          box(s, x, by, w, bh, fill, st === "planned" ? { line: { color: K.accent4, width: 1.25, dashType: "dash" } } : {});
+          if (outside) text(s, it.title, { x: x + w + 0.08, y: by, w: Math.max(0.5, gx + gw - x - w - 0.08), h: bh, fontSize: fs, bold: true, color: K.dk2, valign: "middle" });
+          else text(s, it.title, { x: x + 0.08, y: by, w: w - 0.16, h: bh, fontSize: fs, bold: st !== "planned", color: st === "planned" ? K.dk2 : onColor(fill), valign: "middle" });
+        }
+      }
+      y += laneH;
+      s.addShape(pres.shapes.LINE, { x: A.x, y, w: A.w, h: 0, line: { color: K.border, width: 0.75 } });
+    }
+    if (today != null) {
+      if (!(today >= 0 && today <= P)) throw new Error(`roadmap: today precisa estar entre 0 e ${P}`);
+      const tx = gx + today * pw;
+      s.addShape(pres.shapes.LINE, { x: tx, y: gy - 0.05, w: 0, h: gb - gy + 0.08, line: { color: K.danger, width: 1.5, dashType: "dash" } });
+      text(s, "Hoje", { x: tx - 0.5, y: gb + 0.04, w: 1, h: 0.24, fontSize: 9.5, bold: true, color: K.danger, align: "center", valign: "middle" });
+    }
+    return { warnings: warns };
+  }
+
+  // Checklist: { items: [{ text, state: "done"|"pending"|"blocked"|"na", note }], cols, showProgress }.
+  const CHECK = { done: ["FaCheckSquare", "accent1"], pending: ["FaRegSquare", "accent5"], blocked: ["FaWindowClose", "danger"], na: ["FaMinusSquare", "accent5"] };
+  async function checklist(s, { items, cols, showProgress = false }, { area } = {}) {
+    need("checklist", items, 1, 14);
+    for (const it of items) if (!CHECK[it.state || "pending"]) throw new Error(`checklist: state "${it.state}" inválido em "${it.text}" (${Object.keys(CHECK).join(", ")})`);
+    const A = areaOf(s, area);
+    const n = items.length, C = cols || (n > 6 && A.w >= 7 ? 2 : 1), R = Math.ceil(n / C), gap = 0.1, cg = 0.3;
+    const ph = showProgress ? 0.65 : 0;
+    const rh = Math.min((A.h - ph - gap * (R - 1)) / R, 0.62);
+    const totalH = ph + R * rh + gap * (R - 1), y0 = A.y + (A.h - totalH) / 2;
+    if (showProgress) {
+      const valid = items.filter((it) => it.state !== "na"), done = valid.filter((it) => it.state === "done").length;
+      text(s, [{ text: `${done} de ${valid.length}`, options: { bold: true, color: K.dk2 } }, { text: valid.length === 1 ? " concluído" : " concluídos", options: { color: K.accent5 } }],
+        { x: A.x, y: y0, w: A.w, h: 0.3, fontSize: 13, valign: "middle" });
+      box(s, A.x, y0 + 0.36, A.w, 0.12, K.lt2, { rectRadius: 0.06 });
+      if (done) box(s, A.x, y0 + 0.36, (A.w * done) / valid.length, 0.12, K.accent1, { rectRadius: 0.06 });
+    }
+    const w = (A.w - cg * (C - 1)) / C;
+    for (const [i, it] of items.entries()) {
+      const c = Math.floor(i / R), r = i % R, st = it.state || "pending";
+      const x = A.x + c * (w + cg), y = y0 + ph + r * (rh + gap);
+      box(s, x, y, w, rh, K.neutralBg);
+      const d = Math.min(0.28, rh - 0.16);
+      await icon(s, CHECK[st][0], x + 0.15, y + (rh - d) / 2, d, K[CHECK[st][1]]);
+      const color = st === "done" || st === "na" ? K.accent5 : K.dk1;
+      const below = it.note && rh >= 0.55;
+      text(s, [{ text: it.text, options: { fontSize: 12.5, color, breakLine: !!below } },
+        ...(it.note ? [{ text: (below ? "" : "  ·  ") + it.note, options: { fontSize: 10.5, color: K.accent5, italic: true } }] : [])],
+      { x: x + 0.15 + d + 0.15, y, w: w - d - 0.45, h: rh, valign: "middle" });
+    }
+  }
+
   async function save(outPath) {
     await pres.writeFile({ fileName: outPath });
     await applyTheme(outPath, tokens);
@@ -597,6 +959,7 @@ async function createDeck(opts = {}) {
     // componentes
     cards, iconList, bullets, compare, table, steps, timeline, kpis, callout, quote, chart,
     agenda, imageText, hub, diagram, matrix, status,
+    layers, cycle, options, prosCons, funnel, roadmap, checklist,
     // primitivas, para layouts sob medida
     text, box, icon, circleIcon, arrow, eyebrow, shadow, split,
     save,

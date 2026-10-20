@@ -1,23 +1,28 @@
 #!/usr/bin/env bash
-# Instala as skills deste repositório para Claude Code e/ou GitHub Copilot (VS Code).
+# Instala as skills deste repositório para agentes de IA.
 #
 # Uso: ./install.sh [opções] [skill ...]
 #   Sem nomes de skill, instala todas as que estão em skills/.
+#   Sem --claude nem --agents, pergunta para quais formatos instalar.
+#
+# Formatos:
+#   claude    ~/.claude/skills, lido pelo Claude Code
+#   agents    ~/.agents/skills, o diretório genérico de Agent Skills
+#             (lido pelo Copilot no VS Code e por outros agentes)
 #
 # Opções:
-#   --claude          instala para o Claude Code (~/.claude/skills)
-#   --copilot         instala para o Copilot no VS Code (~/.copilot/skills)
-#   --project DIR     instala no repositório DIR em vez do diretório pessoal
-#                     (DIR/.claude/skills e/ou DIR/.github/skills)
-#   --link            cria links simbólicos em vez de copiar (um git pull já atualiza)
-#   --uninstall       remove as skills indicadas do destino
+#   --claude          instala no formato claude, sem perguntar
+#   --agents          instala no formato agents, sem perguntar
+#   --project DIR     instala no repositório DIR (DIR/.claude/skills, DIR/.agents/skills)
+#                     em vez do diretório pessoal
+#   --link            cria links simbólicos para este repositório em vez de copiar
+#                     (um git pull aqui já atualiza as skills instaladas)
+#   --uninstall       remove as skills indicadas dos formatos escolhidos
 #   --list            lista as skills disponíveis
 #   -h, --help        mostra esta ajuda
 #
-# Sem --claude nem --copilot, instala para os dois. O Copilot também lê
-# ~/.claude/skills (e .claude/skills num repositório), então, com os dois
-# alvos, a skill é instalada só no diretório do Claude, para não aparecer
-# duplicada no Copilot.
+# Com os dois formatos, a skill é instalada em .agents/skills e .claude/skills/<skill>
+# vira um link para ela, para existir uma cópia só.
 
 set -euo pipefail
 
@@ -25,7 +30,7 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILLS_DIR="$REPO_DIR/skills"
 
 claude=false
-copilot=false
+agents=false
 project=""
 link=false
 uninstall=false
@@ -42,7 +47,7 @@ available() {
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --claude) claude=true ;;
-    --copilot) copilot=true ;;
+    --agents) agents=true ;;
     --project)
       [[ $# -ge 2 ]] || { echo "erro: --project precisa de um diretório" >&2; exit 1; }
       project="$2"; shift ;;
@@ -55,11 +60,6 @@ while [[ $# -gt 0 ]]; do
   esac
   shift
 done
-
-if ! $claude && ! $copilot; then
-  claude=true
-  copilot=true
-fi
 
 if [[ ${#skills[@]} -eq 0 ]]; then
   mapfile -t skills < <(available)
@@ -74,43 +74,87 @@ done
 
 if [[ -n "$project" ]]; then
   [[ -d "$project" ]] || { echo "erro: diretório não existe: $project" >&2; exit 1; }
-  project="$(cd "$project" && pwd)"
-  claude_dest="$project/.claude/skills"
-  copilot_dest="$project/.github/skills"
+  base="$(cd "$project" && pwd)"
 else
-  claude_dest="$HOME/.claude/skills"
-  copilot_dest="$HOME/.copilot/skills"
+  base="$HOME"
 fi
+claude_dest="$base/.claude/skills"
+agents_dest="$base/.agents/skills"
 
-# Com os dois alvos, o diretório do Claude atende também o Copilot.
-# Na remoção, limpa todos os destinos selecionados.
-targets=()
-$claude && targets+=("$claude_dest")
-$copilot && { ! $claude || $uninstall; } && targets+=("$copilot_dest")
-
-for dest in "${targets[@]}"; do
-  mkdir -p "$dest"
-  for s in "${skills[@]}"; do
-    target="$dest/$s"
-    if $uninstall; then
-      if [[ -e "$target" || -L "$target" ]]; then
-        rm -rf "$target"
-        echo "removida: $target"
-      fi
-      continue
-    fi
-    rm -rf "$target"
-    if $link; then
-      ln -s "$SKILLS_DIR/$s" "$target"
-      echo "link:     $target -> $SKILLS_DIR/$s"
-    else
-      cp -R "$SKILLS_DIR/$s" "$target"
-      echo "copiada:  $target"
-    fi
+# Pergunta os formatos quando nenhum foi passado na linha de comando.
+if ! $claude && ! $agents; then
+  if [[ ! -t 0 ]]; then
+    echo "erro: sem terminal para perguntar; passe --claude e/ou --agents" >&2
+    exit 1
+  fi
+  $uninstall && acao="Remover de" || acao="Instalar para"
+  echo "Skills: ${skills[*]}"
+  echo "$acao quais formatos?"
+  echo "  1) claude  $claude_dest (Claude Code)"
+  echo "  2) agents  $agents_dest (Copilot no VS Code e outros agentes)"
+  while true; do
+    read -r -p "Escolha um ou mais, separados por espaço [1 2]: " resposta
+    resposta="${resposta:-1 2}"
+    claude=false; agents=false; valida=true
+    for r in ${resposta//,/ }; do
+      case "$r" in
+        1|claude) claude=true ;;
+        2|agents) agents=true ;;
+        *) valida=false ;;
+      esac
+    done
+    if $valida && { $claude || $agents; }; then break; fi
+    echo "Resposta inválida: use 1, 2 ou 1 2."
   done
-done
-
-if $claude && $copilot && ! $uninstall; then
   echo
-  echo "O Copilot lê $claude_dest, então não foi preciso instalar em $copilot_dest."
 fi
+
+# Remove o destino só se for uma instalação de skill (link ou pasta com SKILL.md).
+remove() {
+  local target="$1"
+  if [[ -L "$target" ]]; then
+    rm -f "$target"
+  elif [[ -f "$target/SKILL.md" ]]; then
+    rm -rf "$target"
+  elif [[ -e "$target" ]]; then
+    echo "erro: $target existe e não parece uma skill; remova-o à mão" >&2
+    exit 1
+  else
+    return 1
+  fi
+}
+
+# Copia a skill para o destino, ou cria um link para este repositório com --link.
+place() {
+  local s="$1" target="$2"
+  mkdir -p "$(dirname "$target")"
+  remove "$target" || true
+  if $link; then
+    ln -s "$SKILLS_DIR/$s" "$target"
+    echo "link:     $target -> $SKILLS_DIR/$s"
+  else
+    cp -R "$SKILLS_DIR/$s" "$target"
+    echo "copiada:  $target"
+  fi
+}
+
+for s in "${skills[@]}"; do
+  if $uninstall; then
+    for target in $($agents && echo "$agents_dest/$s") $($claude && echo "$claude_dest/$s"); do
+      remove "$target" && echo "removida: $target" || true
+    done
+    continue
+  fi
+
+  if $agents; then
+    place "$s" "$agents_dest/$s"
+    if $claude; then
+      remove "$claude_dest/$s" || true
+      mkdir -p "$claude_dest"
+      ln -s "$agents_dest/$s" "$claude_dest/$s"
+      echo "link:     $claude_dest/$s -> $agents_dest/$s"
+    fi
+  else
+    place "$s" "$claude_dest/$s"
+  fi
+done

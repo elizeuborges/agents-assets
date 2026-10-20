@@ -12,36 +12,22 @@ Esta skill transforma um roteiro (título, mensagem e blocos de cada slide) num 
 | Arquivo | Para que serve |
 |---|---|
 | `brand/tokens.json` | **Única fonte da identidade visual**: paleta (12 cores de tema + neutros), fontes, rodapé padrão e logo. Nenhum componente tem cor solta. |
-| `scripts/setup.js` | Verifica e configura o ambiente. Rode antes do primeiro uso. |
+| `scripts/setup.js` | Verifica e configura o ambiente (ver `references/setup.md`). |
 | `scripts/build-from-spec.js` | Gera o deck a partir de um roteiro JSON. É o caminho padrão. |
 | `scripts/slides.js` | Biblioteca JavaScript (sobre pptxgenjs) com slides, blocos e primitivas, para layouts sob medida. |
 | `scripts/extract-potx-theme.js` | Lê o template de uma marca (.potx) e atualiza `brand/tokens.json`. |
-| `scripts/render.js` | Converte o .pptx em PDF e PNG por slide, para conferência visual, com o PowerPoint (Windows) ou o LibreOffice já instalados. |
+| `scripts/render.js` | Converte o .pptx em PDF e PNG por slide, para conferência visual, com o PowerPoint (Windows) ou o LibreOffice já instalados. No WSL, usa também os do Windows. |
+| `fonts/` | Carlito (licença OFL, mesmas métricas da Calibri), que substitui a Calibri na conferência quando ela falta. O deck continua em Calibri. |
+| `references/setup.md` | Configuração do ambiente: só no primeiro uso ou quando um script falhar por dependência. |
 | `references/spec-format.md` | Formato completo do roteiro e de cada bloco. |
 | `references/adding-blocks.md` | Como criar um bloco novo na biblioteca e no gerador. |
 | `examples/exemplo.json` | Roteiro que usa todos os tipos de slide e bloco; `examples/exemplo.pptx` é o resultado. |
 
 Todos os caminhos são relativos à pasta desta skill. Os scripts são Node.js e funcionam em Windows, macOS e Linux.
 
-## Passo 0: verificar e configurar o ambiente
+## Primeiro uso
 
-Antes do primeiro uso numa máquina, e sempre que um script falhar por dependência:
-
-```bash
-node scripts/setup.js            # verifica, instala as dependências npm e gera o exemplo como teste
-node scripts/setup.js --check    # só verifica, sem instalar nada
-```
-
-Se o comando `node` não for reconhecido, instale o Node.js 18+ (https://nodejs.org) antes de tudo.
-
-O script confere, nesta ordem:
-1. **Node.js 18+ e npm** (obrigatórios).
-2. **Dependências npm** (obrigatórias): pptxgenjs, react, react-dom, react-icons e sharp. Instala com `npm install` se faltarem e confirma que o sharp carrega nesta plataforma.
-3. **Identidade visual**: as 12 cores de `brand/tokens.json` são hex válidos e os arquivos de logo existem.
-4. **Conferência visual** (opcional): se há PowerPoint (no Windows) ou LibreOffice para gerar imagens dos slides. O setup só verifica; **nunca instale essas ferramentas na máquina de quem usa a skill**. Sem nenhuma delas, os decks são gerados normalmente e a conferência fica manual.
-5. **Teste de geração**: gera o exemplo num diretório temporário.
-
-Saída `0` significa pronto para gerar decks. Saída `1` lista os itens `[falta]`: resolva-os e rode de novo antes de seguir. Itens `[aviso]` não impedem a geração. Se o `npm install` falhar por rede ou proxy, informe isso a quem pediu em vez de tentar outra forma de baixar os pacotes.
+Se a pasta da skill não tiver `node_modules/`, ou se um script falhar por dependência, leia `references/setup.md` e configure o ambiente antes de seguir. Nos demais usos, não é preciso lê-lo.
 
 ## Fluxo padrão
 
@@ -55,7 +41,7 @@ Saída `0` significa pronto para gerar decks. Saída `1` lista os itens `[falta]
    ```
    Avisos `AVISO ... caracteres` indicam texto que tende a estourar a caixa: encurte ou divida o slide.
 3. **Confira o resultado**: `node scripts/render.js saida.pptx` e olhe as imagens (ou o PDF, quando não houver imagens). Procure texto cortado ou sobreposto, áreas vazias grandes e slides com texto demais. Corrija o roteiro e gere de novo; nunca edite o .pptx à mão para corrigir layout.
-   - O `render.js` usa o PowerPoint no Windows e, se não houver, o LibreOffice. Não instala nada.
+   - O `render.js` usa o PowerPoint e, se não houver, o LibreOffice. No WSL, procura também os programas do Windows. Não instala nada.
    - Se ele sair com código `3` (`SEM CONFERÊNCIA`), não existe ferramenta nesta máquina. Se você tiver outra forma de ver o resultado (por exemplo, ler o .pptx ou o PDF com uma ferramenta própria), use-a. Se não tiver, entregue o deck dizendo claramente que ele **não foi conferido visualmente** e que a pessoa precisa abri-lo e conferir.
 4. **Entregue o .pptx** e o roteiro JSON juntos, para que a próxima versão seja gerada pelo mesmo caminho.
 
@@ -89,6 +75,13 @@ Saída `0` significa pronto para gerar decks. Saída `1` lista os itens `[falta]
 | `diagram` | Caixas e setas numa grade (`col`, `row`, `colSpan`, `rowSpan`), com rótulos nas setas: arquitetura e fluxos. |
 | `matrix` | Matriz 2×2 com eixos rotulados, um quadrante em destaque e pontos posicionados de 0 a 1. |
 | `status` | Tabela de acompanhamento com farol (`ok`, `atencao`, `risco`, `concluido`), responsável e prazo. |
+| `layers` | Arquitetura em camadas, pilha tecnológica, níveis de maturidade: a ordem vertical significa dependência. |
+| `cycle` | Processo que se repete (PDCA, sprint, melhoria contínua): o último passo volta ao primeiro. |
+| `options` | 2 a 4 alternativas para a liderança decidir, com prós, contras, custo e prazo, e a recomendada em destaque. |
+| `prosCons` | Prós e contras de uma única proposta, com o veredito no fim. Para dois cenários lado a lado, use `compare`. |
+| `funnel` | Conversão ou redução entre etapas (ideias → entregas, leads → clientes), com a taxa entre elas. |
+| `roadmap` | Plano por período com várias frentes em paralelo (trilhas), itens que ocupam vários períodos e marcos. Para uma linha única de fases, use `timeline`. |
+| `checklist` | Lista curta de verificação (critérios de pronto, go-live, pré-requisitos) com o progresso. Para acompanhar responsável e prazo, use `status`. |
 
 Os blocos de um slide ficam empilhados (o `callout` ocupa uma faixa fixa e os outros dividem o espaço pelo `weight`), ou lado a lado com `"layout": "columns"` e `"ratios": [1, 1.2]`.
 

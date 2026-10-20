@@ -76,11 +76,53 @@
 
 { "type": "status", "columns": ["Item", "Status", "Responsável", "Prazo", "Observação"],
   "rows": [{ "item": "…", "status": "ok | atencao | risco | concluido", "owner": "…", "due": "…", "note": "…" }] }
+
+{ "type": "layers", "order": "top-down | bottom-up", "highlight": [1],
+  "items": [{ "icon": "users", "title": "…", "text": "…", "tags": ["…"] }] }
+
+{ "type": "cycle", "center": "…", "centerIcon": "FaSync", "highlight": [0],
+  "items": [{ "icon": "bulb", "title": "…", "text": "…" }] }
+
+{ "type": "options", "recommended": 1,
+  "items": [{ "label": "Opção A", "title": "…", "text": "…", "pros": ["…"], "cons": ["…"],
+              "facts": [{ "label": "Custo", "value": "…" }] }] }
+
+{ "type": "prosCons", "pros": { "title": "Prós", "items": ["…"] }, "cons": { "title": "Contras", "items": ["…"] },
+  "verdict": { "title": "Recomendação:", "text": "…", "icon": "bulb" } }
+
+{ "type": "funnel", "highlight": [3], "showRate": true,
+  "items": [{ "label": "…", "value": "320", "text": "…" }] }
+
+{ "type": "roadmap", "periods": ["T1", "T2", "T3", "T4"], "today": 1.5,
+  "lanes": [{ "title": "…", "icon": "server",
+              "items": [{ "title": "…", "start": 0, "end": 2, "style": "done | doing | planned", "milestone": false }] }] }
+
+{ "type": "checklist", "cols": 2, "showProgress": true,
+  "items": [{ "text": "…", "state": "done | pending | blocked | na", "note": "…" }] }
 ```
+
+Quantidade de itens aceita (fora dela, o gerador para com erro):
+
+| Bloco | Itens |
+|---|---|
+| `layers` | 2 a 6 camadas |
+| `cycle` | 3 a 6 itens |
+| `options` | 2 a 4 opções |
+| `prosCons` | 1 a 6 itens de cada lado |
+| `funnel` | 3 a 6 etapas |
+| `roadmap` | 2 a 8 períodos, 1 a 6 trilhas |
+| `checklist` | 1 a 14 itens |
 
 - `matrix`: os quadrantes seguem a ordem superior esquerdo, superior direito, inferior esquerdo, inferior direito. Nos pontos, `x` e `y` vão de 0 a 1, com `y` crescendo para cima.
 - `diagram`: a seta sai da borda do nó de origem; nós lado a lado ganham seta horizontal e nós empilhados, vertical. Prefira grades de até 4 × 3.
 - `imageText`: sem a imagem no caminho indicado, aparece um espaço reservado tracejado com o caminho procurado.
+- `layers`: a ordem vertical significa dependência (cada camada se apoia na de baixo). `order: "bottom-up"` desenha o primeiro item embaixo. Com `tags`, as pílulas aparecem no lugar do texto (até 6).
+- `cycle`: nós em círculo, em sentido horário a partir do topo, e o último volta ao primeiro. Sem `icon`, o nó mostra o número. Numa coluna estreita, só o título aparece.
+- `options`: `recommended` é o índice da opção destacada com o selo "Recomendada". Seções sem conteúdo (prós, contras, facts) somem, e as que existem ficam alinhadas entre as colunas.
+- `prosCons`: os títulos padrão são "Prós" e "Contras". `verdict` aparece numa faixa escura embaixo. Numa coluna estreita, os prós ficam sobre os contras.
+- `funnel`: sem `highlight`, as faixas escurecem de cima para baixo; com `highlight`, só as destacadas ficam escuras. `showRate` mostra, à esquerda, a taxa entre etapas cujo `value` é numérico ("1.200", "12,5", "10 mil").
+- `roadmap`: `start` e `end` são índices de período e aceitam frações (`end` é exclusivo: `0` a `2` ocupa os dois primeiros). Estilos: `done` escuro, `doing` destaque, `planned` contorno tracejado. `milestone: true` desenha um losango em `start`. `today` desenha a linha "Hoje". Itens sobrepostos na mesma trilha vão para sub-linhas. Título que não cabe na barra vai para o lado dela, com aviso.
+- `checklist`: `cols` padrão é 1, ou 2 com mais de 6 itens. `showProgress` conta os `done` sobre os itens que não são `na`.
 
 ## Limites recomendados
 
@@ -95,6 +137,13 @@
 | Texto de fase (`timeline`) | 330 |
 | Texto de item do `hub` | 90 |
 | Texto de quadrante (`matrix`) | 160 |
+| Título / texto de camada (`layers`) | 30 / 120; tag 18 |
+| Título / texto de item do `cycle` | 25 / 80 |
+| Título / texto de opção (`options`) | 45 / 140; pró ou contra 60 (até 3 de cada); valor de fact 20 (até 3) |
+| Item / veredito de `prosCons` | 90 / 160 |
+| Label / value / texto de etapa (`funnel`) | 30 / 10 / 90 |
+| Trilha / item de `roadmap` | 20 / 30 |
+| Texto / nota de `checklist` | 70 / 60 |
 | Observação (`status`) | 70 |
 | Texto de `imageText` | 400 |
 

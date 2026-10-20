@@ -9,29 +9,35 @@ Cada skill fica numa pasta em [skills/](skills/) com um `SKILL.md` (no formato a
 | Skill | O que faz | Requisitos |
 |---|---|---|
 | [confluence-docs](skills/confluence-docs/SKILL.md) | Escreve e revisa páginas do Confluence (how-tos, golden paths, referências, ADRs). Nunca altera o Confluence direto: prepara um rascunho local, abre o diff no VS Code e só publica o que você aprovou. | MCP da Atlassian configurado no agente; `code` no PATH para abrir os diffs. |
-| [slides-padrao](skills/slides-padrao/SKILL.md) | Gera apresentações `.pptx` com identidade visual fixa (paleta, fontes, capa, rodapé, logo) a partir de um roteiro JSON. | Node.js 18+. Opcional: PowerPoint (Windows) ou LibreOffice, para conferir os slides como imagem. |
+| [slides-padrao](skills/slides-padrao/SKILL.md) | Gera apresentações `.pptx` com identidade visual fixa (paleta, fontes, capa, rodapé, logo) a partir de um roteiro JSON. | Node.js 18+. Opcional: PowerPoint (Windows) ou LibreOffice, para conferir os slides como imagem. Traz a fonte Carlito (OFL), que substitui a Calibri na conferência quando ela falta. |
 
 ## Instalação
 
 ```bash
 git clone <url-deste-repositório> ~/projetos/agents-assets
 cd ~/projetos/agents-assets
-./install.sh            # todas as skills, para Claude Code e Copilot
+./install.sh            # todas as skills; pergunta para quais formatos
 ```
+
+O instalador pergunta para quais formatos instalar (um ou os dois):
+
+| Formato | Diretório | Quem lê |
+|---|---|---|
+| `claude` | `~/.claude/skills` | Claude Code |
+| `agents` | `~/.agents/skills` | Diretório genérico de Agent Skills: Copilot no VS Code e outros agentes |
+
+Com os dois, a skill é copiada para `~/.agents/skills` e `~/.claude/skills/<skill>` vira um link para ela, para existir uma cópia só.
 
 | Comando | Efeito |
 |---|---|
 | `./install.sh --list` | Lista as skills disponíveis. |
 | `./install.sh slides-padrao` | Instala só as skills indicadas. |
-| `./install.sh --claude` | Só para o Claude Code (`~/.claude/skills`). |
-| `./install.sh --copilot` | Só para o Copilot (`~/.copilot/skills`). |
-| `./install.sh --project ~/projetos/meu-repo` | Instala no repositório (`.claude/skills` e/ou `.github/skills`) em vez do diretório pessoal, para o time inteiro usar. |
-| `./install.sh --link` | Cria links simbólicos em vez de copiar: um `git pull` aqui já atualiza as skills instaladas. |
-| `./install.sh --uninstall [skill ...]` | Remove as skills do destino. |
+| `./install.sh --claude --agents` | Escolhe os formatos sem perguntar (para scripts e CI). |
+| `./install.sh --project ~/projetos/meu-repo` | Instala no repositório (`.claude/skills` e/ou `.agents/skills`) em vez do diretório pessoal, para o time inteiro usar. |
+| `./install.sh --link` | Cria links simbólicos para este repositório em vez de copiar: um `git pull` aqui já atualiza as skills instaladas. |
+| `./install.sh --uninstall [skill ...]` | Remove as skills dos formatos escolhidos. Só apaga o que for uma skill instalada (link ou pasta com `SKILL.md`). |
 
-Sem `--claude` nem `--copilot`, a skill vai só para `~/.claude/skills`: o Copilot também lê esse diretório, e instalar nos dois faria a skill aparecer duplicada. Use `--copilot` em máquinas sem o Claude Code.
-
-O instalador é um script bash: no Windows, rode-o pelo WSL ou pelo Git Bash.
+O instalador é um script bash. No Windows, rode-o pelo Git Bash.
 
 ### Depois de instalar
 

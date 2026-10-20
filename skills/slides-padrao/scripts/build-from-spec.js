@@ -19,7 +19,17 @@ const check = (where, value, max) => {
 // Altura fixa de alguns blocos quando empilhados; os demais dividem o restante.
 const FIXED_H = { callout: 0.68 };
 
+// Erros dos blocos saem com o slide em que aconteceram.
 async function renderBlock(deck, s, b, area, where, ctx) {
+  try {
+    return await drawBlock(deck, s, b, area, where, ctx);
+  } catch (e) {
+    if (!e.message.startsWith(where)) e.message = `${where}: ${e.message}`;
+    throw e;
+  }
+}
+
+async function drawBlock(deck, s, b, area, where, ctx) {
   const o = { area };
   switch (b.type) {
     case "cards":
@@ -72,6 +82,54 @@ async function renderBlock(deck, s, b, area, where, ctx) {
     case "status":
       b.rows.forEach((r, i) => check(`${where} linha ${i + 1} observação`, r.note, 70));
       return deck.status(s, b, Object.assign(o, { fontSize: b.fontSize }));
+    case "layers":
+      (b.items || []).forEach((it, i) => {
+        check(`${where} camada ${i + 1} título`, it.title, 30);
+        check(`${where} camada ${i + 1} texto`, it.text, 120);
+        if ((it.tags || []).length > 6) warnings.push(`${where} camada ${i + 1}: ${it.tags.length} tags (até 6; as demais não aparecem)`);
+        (it.tags || []).forEach((t, j) => check(`${where} camada ${i + 1} tag ${j + 1}`, t, 18));
+      });
+      return deck.layers(s, b, o);
+    case "cycle":
+      (b.items || []).forEach((it, i) => { check(`${where} item ${i + 1} título`, it.title, 25); check(`${where} item ${i + 1} texto`, it.text, 80); });
+      return deck.cycle(s, b, o);
+    case "options":
+      (b.items || []).forEach((it, i) => {
+        const w = `${where} opção ${i + 1}`;
+        check(`${w} título`, it.title, 45);
+        check(`${w} texto`, it.text, 140);
+        for (const [k, nome] of [["pros", "prós"], ["cons", "contras"]]) {
+          if ((it[k] || []).length > 3) warnings.push(`${w}: ${it[k].length} ${nome} (recomendado até 3)`);
+          (it[k] || []).forEach((t, j) => check(`${w} ${nome} ${j + 1}`, t, 60));
+        }
+        if ((it.facts || []).length > 3) warnings.push(`${w}: ${it.facts.length} facts (recomendado até 3)`);
+        (it.facts || []).forEach((f, j) => check(`${w} fact ${j + 1}`, f.value, 20));
+      });
+      if (b.recommended != null && !(b.recommended >= 0 && b.recommended < (b.items || []).length)) throw new Error(`${where}: recommended ${b.recommended} não é um índice de opção`);
+      return deck.options(s, b, o);
+    case "prosCons":
+      for (const [k, nome] of [["pros", "pró"], ["cons", "contra"]]) ((b[k] || {}).items || []).forEach((t, j) => check(`${where} ${nome} ${j + 1}`, t, 90));
+      if (b.verdict) check(`${where} veredito`, b.verdict.text, 160);
+      return deck.prosCons(s, b, o);
+    case "funnel":
+      (b.items || []).forEach((it, i) => {
+        check(`${where} etapa ${i + 1} label`, it.label, 30);
+        check(`${where} etapa ${i + 1} value`, it.value, 10);
+        check(`${where} etapa ${i + 1} texto`, it.text, 90);
+      });
+      return deck.funnel(s, b, o);
+    case "roadmap": {
+      (b.lanes || []).forEach((ln, i) => {
+        check(`${where} trilha ${i + 1}`, ln.title, 20);
+        (ln.items || []).forEach((it, j) => check(`${where} trilha ${i + 1} item ${j + 1}`, it.title, 30));
+      });
+      const r = await deck.roadmap(s, b, o);
+      r.warnings.forEach((m) => warnings.push(`${where} ${m}`));
+      return r;
+    }
+    case "checklist":
+      (b.items || []).forEach((it, i) => { check(`${where} item ${i + 1} texto`, it.text, 70); check(`${where} item ${i + 1} nota`, it.note, 60); });
+      return deck.checklist(s, b, o);
     default:
       throw new Error(`${where}: bloco desconhecido "${b.type}"`);
   }

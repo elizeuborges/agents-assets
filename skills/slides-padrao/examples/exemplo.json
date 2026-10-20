@@ -175,6 +175,53 @@
     },
     {
       "type": "content",
+      "title": "Camadas da skill",
+      "message": "Cada camada se apoia na de baixo: quem escreve o roteiro não toca na identidade visual.",
+      "blocks": [
+        {
+          "type": "layers",
+          "highlight": [
+            1
+          ],
+          "items": [
+            {
+              "icon": "file",
+              "title": "Roteiro",
+              "text": "O JSON com título, mensagem e blocos de cada slide, escrito por pessoas ou agentes."
+            },
+            {
+              "icon": "cogs",
+              "title": "Gerador",
+              "text": "build-from-spec.js valida o roteiro, avisa sobre texto longo e monta o deck."
+            },
+            {
+              "icon": "cubes",
+              "title": "Biblioteca de blocos",
+              "tags": [
+                "cards",
+                "steps",
+                "diagram",
+                "roadmap",
+                "checklist",
+                "…e mais 19"
+              ]
+            },
+            {
+              "icon": "shield",
+              "title": "Identidade visual",
+              "tags": [
+                "Paleta",
+                "Fontes",
+                "Logo",
+                "Rodapé"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "content",
       "title": "Como as partes se ligam",
       "message": "O gerador junta o roteiro e a identidade visual; a conferência volta para o roteiro.",
       "blocks": [
@@ -306,6 +353,68 @@
     },
     {
       "type": "content",
+      "title": "Rotina de cada deck",
+      "message": "Escrever, gerar e conferir até o deck estar pronto para entregar.",
+      "layout": "columns",
+      "ratios": [
+        1,
+        1
+      ],
+      "blocks": [
+        {
+          "type": "cycle",
+          "center": "Deck",
+          "items": [
+            {
+              "icon": "file",
+              "title": "Escrever o roteiro"
+            },
+            {
+              "icon": "cogs",
+              "title": "Gerar o .pptx"
+            },
+            {
+              "icon": "eye",
+              "title": "Conferir as imagens"
+            },
+            {
+              "icon": "tools",
+              "title": "Ajustar o roteiro"
+            }
+          ]
+        },
+        {
+          "type": "checklist",
+          "showProgress": true,
+          "items": [
+            {
+              "text": "Um slide, uma mensagem",
+              "state": "done"
+            },
+            {
+              "text": "Gerado sem avisos de texto longo",
+              "state": "done"
+            },
+            {
+              "text": "Conferido com o render.js",
+              "state": "pending",
+              "note": "Ou abrindo o .pptx"
+            },
+            {
+              "text": "Roteiro entregue junto com o .pptx",
+              "state": "pending"
+            },
+            {
+              "text": "Logo da marca configurado",
+              "state": "na",
+              "note": "Só quando a marca tiver logo"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "content",
       "title": "Como fica o resultado",
       "message": "Um slide gerado a partir de cinco linhas de roteiro.",
       "blocks": [
@@ -332,7 +441,7 @@
     {
       "type": "content",
       "title": "Blocos disponíveis",
-      "message": "São 17 blocos; cada slide de conteúdo combina um ou mais, empilhados ou em colunas.",
+      "message": "São 24 blocos; cada slide de conteúdo combina um ou mais, empilhados ou em colunas.",
       "blocks": [
         {
           "type": "table",
@@ -380,6 +489,18 @@
             [
               "matrix / status",
               "Priorização 2×2, ou acompanhamento com farol"
+            ],
+            [
+              "layers / cycle",
+              "Camadas que dependem umas das outras, ou um processo que se repete"
+            ],
+            [
+              "options / prosCons",
+              "Alternativas para a liderança decidir, ou prós e contras de uma proposta"
+            ],
+            [
+              "funnel / roadmap / checklist",
+              "Conversão entre etapas, plano com várias frentes, ou lista de verificação"
             ]
           ]
         },
@@ -479,6 +600,39 @@
       ]
     },
     {
+      "type": "content",
+      "title": "Do pedido ao deck entregue",
+      "message": "Exemplo de bloco funnel, com dados ilustrativos do piloto.",
+      "blocks": [
+        {
+          "type": "funnel",
+          "showRate": true,
+          "items": [
+            {
+              "label": "Pedidos de apresentação",
+              "value": "120",
+              "text": "Todos os pedidos das duas áreas do piloto no trimestre."
+            },
+            {
+              "label": "Feitos pela skill",
+              "value": "84",
+              "text": "Os demais pediam layouts que a skill ainda não tinha."
+            },
+            {
+              "label": "Sem retrabalho de layout",
+              "value": "70",
+              "text": "Entregues sem ajustes manuais no PowerPoint."
+            },
+            {
+              "label": "Reaproveitados",
+              "value": "35",
+              "text": "Roteiros usados de base para o deck seguinte."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "type": "section",
       "title": "Adoção",
       "subtitle": "Como levar o padrão para o dia a dia",
@@ -542,6 +696,115 @@
     },
     {
       "type": "content",
+      "title": "Como distribuir a skill",
+      "message": "Três caminhos para levar a skill às áreas; recomendamos o repositório compartilhado.",
+      "blocks": [
+        {
+          "type": "options",
+          "recommended": 1,
+          "items": [
+            {
+              "label": "Opção A",
+              "title": "Cópia por área",
+              "text": "Cada área copia a pasta da skill e cuida da sua versão.",
+              "pros": [
+                "Nenhuma infraestrutura"
+              ],
+              "cons": [
+                "Versões divergem com o tempo",
+                "Correções não chegam a todos"
+              ],
+              "facts": [
+                {
+                  "label": "Esforço",
+                  "value": "Baixo"
+                },
+                {
+                  "label": "Prazo",
+                  "value": "Imediato"
+                }
+              ]
+            },
+            {
+              "label": "Opção B",
+              "title": "Repositório compartilhado",
+              "text": "Uma fonte única, instalada nas máquinas e nos agentes pelo install.sh.",
+              "pros": [
+                "Uma versão para todos",
+                "Atualiza com um git pull",
+                "Funciona com Claude e Copilot"
+              ],
+              "cons": [
+                "Exige git nas máquinas"
+              ],
+              "facts": [
+                {
+                  "label": "Esforço",
+                  "value": "Médio"
+                },
+                {
+                  "label": "Prazo",
+                  "value": "2 semanas"
+                }
+              ]
+            },
+            {
+              "label": "Opção C",
+              "title": "Serviço central de geração",
+              "text": "Uma API recebe o roteiro e devolve o .pptx.",
+              "pros": [
+                "Nada a instalar nas máquinas"
+              ],
+              "cons": [
+                "Mais um serviço para operar",
+                "Agentes precisam de acesso à rede"
+              ],
+              "facts": [
+                {
+                  "label": "Esforço",
+                  "value": "Alto"
+                },
+                {
+                  "label": "Prazo",
+                  "value": "2 meses"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "content",
+      "title": "Gerar todo deck pela skill?",
+      "message": "Exemplo de bloco prosCons: a decisão de tornar a skill o caminho padrão.",
+      "blocks": [
+        {
+          "type": "prosCons",
+          "pros": {
+            "title": "A favor",
+            "items": [
+              "Todo deck sai com a mesma identidade visual",
+              "Agentes e pessoas usam o mesmo caminho",
+              "O roteiro em JSON gera a próxima versão sem retrabalho"
+            ]
+          },
+          "cons": {
+            "title": "Contra",
+            "items": [
+              "Layouts muito específicos ainda pedem a biblioteca",
+              "As áreas precisam aprender o formato do roteiro"
+            ]
+          },
+          "verdict": {
+            "title": "Recomendação:",
+            "text": "Tornar a skill o caminho padrão para decks recorrentes e manter a biblioteca para os casos sob medida."
+          }
+        }
+      ]
+    },
+    {
+      "type": "content",
       "title": "Plano de adoção",
       "message": "Começamos pelo template oficial e expandimos por áreas.",
       "blocks": [
@@ -567,6 +830,96 @@
               "label": "Fase 4",
               "title": "Evolução",
               "text": "Novos blocos conforme a demanda, sempre versionados."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "content",
+      "title": "Evolução por trimestre",
+      "message": "Exemplo de bloco roadmap: frentes em paralelo, com o que já foi feito e o que vem.",
+      "blocks": [
+        {
+          "type": "roadmap",
+          "periods": [
+            "T1",
+            "T2",
+            "T3",
+            "T4"
+          ],
+          "today": 2.4,
+          "lanes": [
+            {
+              "title": "Identidade",
+              "icon": "shield",
+              "items": [
+                {
+                  "title": "Tokens da marca",
+                  "start": 0,
+                  "end": 1,
+                  "style": "done"
+                },
+                {
+                  "title": "Logo nos layouts",
+                  "start": 1,
+                  "end": 2.5,
+                  "style": "doing"
+                },
+                {
+                  "title": "Template oficial",
+                  "start": 3,
+                  "milestone": true
+                }
+              ]
+            },
+            {
+              "title": "Blocos",
+              "icon": "cubes",
+              "items": [
+                {
+                  "title": "Blocos básicos",
+                  "start": 0,
+                  "end": 1.5,
+                  "style": "done"
+                },
+                {
+                  "title": "Diagramas e decisão",
+                  "start": 1.5,
+                  "end": 3,
+                  "style": "doing"
+                },
+                {
+                  "title": "Novos sob demanda",
+                  "start": 3,
+                  "end": 4,
+                  "style": "planned"
+                }
+              ]
+            },
+            {
+              "title": "Distribuição",
+              "icon": "users",
+              "items": [
+                {
+                  "title": "Piloto em duas áreas",
+                  "start": 1,
+                  "end": 2,
+                  "style": "done"
+                },
+                {
+                  "title": "Instalador para agentes",
+                  "start": 2,
+                  "end": 3,
+                  "style": "doing"
+                },
+                {
+                  "title": "Todas as áreas",
+                  "start": 3,
+                  "end": 4,
+                  "style": "planned"
+                }
+              ]
             }
           ]
         }
