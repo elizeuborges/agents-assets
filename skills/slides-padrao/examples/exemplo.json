@@ -1,0 +1,633 @@
+{
+  "title": "Apresentações com identidade visual padrão",
+  "author": "Sua área",
+  "footer": "Padrão de apresentações  ·  Exemplo gerado pela skill slides-padrao",
+  "slides": [
+    {
+      "type": "cover",
+      "title": "Apresentações com identidade visual padrão",
+      "subtitle": "Um roteiro em texto vira um deck com a mesma identidade visual",
+      "meta": "Sua área  ·  Outubro de 2026",
+      "icons": [
+        {
+          "icon": "file",
+          "label": "Roteiro"
+        },
+        {
+          "icon": "cogs",
+          "label": "Skill"
+        },
+        {
+          "icon": "check",
+          "label": "Deck"
+        }
+      ],
+      "notes": "Este deck é o exemplo da skill: cada slide mostra um tipo de bloco disponível."
+    },
+    {
+      "type": "content",
+      "title": "Agenda",
+      "blocks": [
+        {
+          "type": "agenda"
+        }
+      ],
+      "notes": "A agenda é montada a partir dos slides de seção do roteiro."
+    },
+    {
+      "type": "section",
+      "title": "Motivação",
+      "subtitle": "Por que padronizar as apresentações",
+      "icon": "target"
+    },
+    {
+      "type": "content",
+      "title": "Por que padronizar",
+      "message": "Cada apresentação hoje nasce de um arquivo diferente; o padrão garante a mesma identidade sem retrabalho.",
+      "blocks": [
+        {
+          "type": "cards",
+          "items": [
+            {
+              "icon": "star",
+              "title": "Mesma identidade",
+              "text": "Paleta, fontes, capa e rodapé vêm de um único arquivo de marca, igual para todos."
+            },
+            {
+              "icon": "clock",
+              "title": "Menos tempo formatando",
+              "text": "Quem apresenta escreve o conteúdo; o layout já está resolvido."
+            },
+            {
+              "icon": "robot",
+              "title": "Pronto para agentes",
+              "text": "Um agente de IA gera o deck a partir do mesmo roteiro que uma pessoa escreveria."
+            }
+          ],
+          "highlight": [
+            2
+          ]
+        },
+        {
+          "type": "callout",
+          "title": "Regra de ouro:",
+          "text": "um slide, uma mensagem. A frase abaixo do título é o que a plateia deve lembrar.",
+          "icon": "bulb",
+          "variant": "light"
+        }
+      ]
+    },
+    {
+      "type": "content",
+      "title": "Antes e depois",
+      "message": "O que muda para quem monta uma apresentação.",
+      "blocks": [
+        {
+          "type": "compare",
+          "left": {
+            "title": "Hoje",
+            "icon": "user"
+          },
+          "right": {
+            "title": "Com a skill",
+            "icon": "users"
+          },
+          "rows": [
+            [
+              "Cada pessoa parte de um arquivo antigo",
+              "Todos partem do mesmo padrão, versionado"
+            ],
+            [
+              "Cores e fontes ajustadas à mão",
+              "Cores e fontes vêm do arquivo de marca"
+            ],
+            [
+              "Trocar o template exige refazer slides",
+              "Trocar o template é atualizar um arquivo e gerar de novo"
+            ],
+            [
+              "Agentes de IA geram slides sem identidade",
+              "Agentes usam a mesma skill e o mesmo roteiro"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "type": "section",
+      "title": "Como funciona",
+      "subtitle": "Do roteiro ao arquivo .pptx",
+      "icon": "flow"
+    },
+    {
+      "type": "content",
+      "title": "Agenda",
+      "blocks": [
+        {
+          "type": "agenda",
+          "current": "Como funciona"
+        }
+      ]
+    },
+    {
+      "type": "content",
+      "title": "O que a skill reúne",
+      "message": "Um só pacote liga a identidade visual, o roteiro e quem gera o deck.",
+      "blocks": [
+        {
+          "type": "hub",
+          "center": "slides-padrao",
+          "centerIcon": "cogs",
+          "items": [
+            {
+              "icon": "file",
+              "title": "Roteiro JSON",
+              "text": "O conteúdo de cada slide"
+            },
+            {
+              "icon": "star",
+              "title": "Tokens da marca",
+              "text": "Paleta, fontes, rodapé e logo"
+            },
+            {
+              "icon": "layers",
+              "title": "Template .potx",
+              "text": "Fonte opcional dos tokens"
+            },
+            {
+              "icon": "robot",
+              "title": "Agentes",
+              "text": "Claude, Copilot e outros"
+            },
+            {
+              "icon": "users",
+              "title": "Pessoas",
+              "text": "Rodam um comando"
+            },
+            {
+              "icon": "code",
+              "title": "Biblioteca",
+              "text": "Layouts sob medida"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "content",
+      "title": "Como as partes se ligam",
+      "message": "O gerador junta o roteiro e a identidade visual; a conferência volta para o roteiro.",
+      "blocks": [
+        {
+          "type": "diagram",
+          "cols": 4,
+          "rows": 2,
+          "nodes": [
+            {
+              "id": "roteiro",
+              "title": "Roteiro",
+              "sub": "roteiro.json",
+              "col": 0,
+              "row": 0
+            },
+            {
+              "id": "tokens",
+              "title": "Identidade visual",
+              "sub": "brand/tokens.json",
+              "col": 0,
+              "row": 1,
+              "style": "outline"
+            },
+            {
+              "id": "gerador",
+              "title": "Gerador",
+              "sub": "build-from-spec.js",
+              "col": 1,
+              "row": 0,
+              "rowSpan": 2,
+              "style": "dark"
+            },
+            {
+              "id": "deck",
+              "title": "Deck",
+              "sub": "saida.pptx",
+              "col": 2,
+              "row": 0,
+              "style": "accent"
+            },
+            {
+              "id": "render",
+              "title": "Conferência",
+              "sub": "render.js",
+              "col": 3,
+              "row": 0
+            },
+            {
+              "id": "pessoa",
+              "title": "Revisão humana",
+              "sub": "ajusta o roteiro",
+              "col": 2,
+              "row": 1,
+              "colSpan": 2
+            }
+          ],
+          "edges": [
+            {
+              "from": "roteiro",
+              "to": "gerador",
+              "label": "conteúdo"
+            },
+            {
+              "from": "tokens",
+              "to": "gerador",
+              "label": "estilo"
+            },
+            {
+              "from": "gerador",
+              "to": "deck"
+            },
+            {
+              "from": "deck",
+              "to": "render",
+              "label": "imagens"
+            },
+            {
+              "from": "render",
+              "to": "pessoa"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "content",
+      "title": "Do roteiro ao deck",
+      "message": "Quatro passos, e o último é sempre uma revisão humana.",
+      "blocks": [
+        {
+          "type": "steps",
+          "items": [
+            {
+              "icon": "file",
+              "title": "Roteiro",
+              "text": "Título, mensagem e blocos de cada slide, em JSON"
+            },
+            {
+              "icon": "cogs",
+              "title": "Geração",
+              "text": "A skill aplica layouts, cores e fontes"
+            },
+            {
+              "icon": "eye",
+              "title": "Conferência",
+              "text": "Imagens de cada slide para revisar"
+            },
+            {
+              "icon": "userCheck",
+              "title": "Revisão",
+              "text": "Quem apresenta ajusta e aprova"
+            }
+          ]
+        },
+        {
+          "type": "bullets",
+          "items": [
+            "Pessoas: escrevem o roteiro e rodam um comando.",
+            {
+              "text": "Agentes: usam a skill diretamente.",
+              "sub": [
+                "Pelo roteiro em JSON, ou pela biblioteca em JavaScript para layouts sob medida."
+              ]
+            }
+          ],
+          "fontSize": 15
+        }
+      ]
+    },
+    {
+      "type": "content",
+      "title": "Como fica o resultado",
+      "message": "Um slide gerado a partir de cinco linhas de roteiro.",
+      "blocks": [
+        {
+          "type": "imageText",
+          "image": "imagem-exemplo.png",
+          "caption": "Slide gerado pelo bloco compare",
+          "title": "Do texto ao slide",
+          "text": "O roteiro diz apenas o título, a mensagem e as linhas da comparação.",
+          "bullets": [
+            "Cores e fontes vêm dos tokens",
+            "Ícones e setas são posicionados pelo bloco",
+            "O arquivo continua editável no PowerPoint"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "section",
+      "title": "Blocos",
+      "subtitle": "O que dá para montar com o roteiro",
+      "icon": "layers"
+    },
+    {
+      "type": "content",
+      "title": "Blocos disponíveis",
+      "message": "São 17 blocos; cada slide de conteúdo combina um ou mais, empilhados ou em colunas.",
+      "blocks": [
+        {
+          "type": "table",
+          "header": [
+            "Bloco",
+            "Quando usar"
+          ],
+          "colW": [
+            2.6,
+            9.53
+          ],
+          "rows": [
+            [
+              "cards",
+              "De 2 a 8 ideias paralelas, com ícone"
+            ],
+            [
+              "iconList",
+              "Uma lista de 3 a 6 itens com explicação"
+            ],
+            [
+              "compare",
+              "Antes e depois, ou duas visões lado a lado"
+            ],
+            [
+              "steps / timeline",
+              "Processo em etapas, ou fases e ondas de um plano"
+            ],
+            [
+              "kpis / chart",
+              "Números de destaque e gráficos nativos do PowerPoint"
+            ],
+            [
+              "callout / quote",
+              "Uma conclusão em destaque, ou uma frase de impacto"
+            ],
+            [
+              "agenda / imageText",
+              "Roteiro do deck, ou uma imagem com explicação ao lado"
+            ],
+            [
+              "hub / diagram",
+              "Um sistema e o que se conecta a ele, ou caixas e setas"
+            ],
+            [
+              "matrix / status",
+              "Priorização 2×2, ou acompanhamento com farol"
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "text": "Cada bloco aceita uma área, então dois blocos podem dividir o mesmo slide.",
+          "icon": "info",
+          "variant": "light"
+        }
+      ]
+    },
+    {
+      "type": "content",
+      "title": "Composição em colunas",
+      "message": "Dois blocos lado a lado: uma lista e um gráfico nativo, editável no PowerPoint.",
+      "layout": "columns",
+      "ratios": [
+        1,
+        1.2
+      ],
+      "blocks": [
+        {
+          "type": "iconList",
+          "items": [
+            {
+              "icon": "target",
+              "title": "Foco",
+              "text": "Uma mensagem por slide."
+            },
+            {
+              "icon": "list",
+              "title": "Pouco texto",
+              "text": "Frases curtas; o detalhe vai nas notas."
+            },
+            {
+              "icon": "bars",
+              "title": "Dados nativos",
+              "text": "Gráficos editáveis, não imagens."
+            }
+          ]
+        },
+        {
+          "type": "chart",
+          "chartType": "bar",
+          "title": "Decks gerados por mês (ilustrativo)",
+          "labels": [
+            "Jul",
+            "Ago",
+            "Set",
+            "Out"
+          ],
+          "series": [
+            {
+              "name": "Decks",
+              "values": [
+                4,
+                9,
+                15,
+                22
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "content",
+      "title": "Números do piloto",
+      "message": "Exemplo de bloco kpis, com valores ilustrativos.",
+      "blocks": [
+        {
+          "type": "kpis",
+          "items": [
+            {
+              "value": "1",
+              "label": "arquivo de marca",
+              "text": "Paleta, fontes, rodapé e logo"
+            },
+            {
+              "value": "17",
+              "label": "tipos de bloco",
+              "text": "Combináveis em qualquer slide"
+            },
+            {
+              "value": "1 min",
+              "label": "para gerar",
+              "text": "Do roteiro ao .pptx"
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "text": "Os números deste slide são ilustrativos.",
+          "icon": "info",
+          "variant": "warn"
+        }
+      ]
+    },
+    {
+      "type": "section",
+      "title": "Adoção",
+      "subtitle": "Como levar o padrão para o dia a dia",
+      "icon": "flag"
+    },
+    {
+      "type": "content",
+      "title": "Onde começar",
+      "message": "Priorizamos os decks frequentes que hoje dão mais trabalho para montar.",
+      "blocks": [
+        {
+          "type": "matrix",
+          "x": {
+            "label": "Frequência",
+            "low": "rara",
+            "high": "frequente"
+          },
+          "y": {
+            "label": "Esforço para montar",
+            "low": "baixo",
+            "high": "alto"
+          },
+          "highlight": 1,
+          "quadrants": [
+            {
+              "title": "Avaliar",
+              "text": "Decks raros e trabalhosos: usar a biblioteca para layouts sob medida."
+            },
+            {
+              "title": "Começar aqui",
+              "text": "Decks frequentes e trabalhosos: maior ganho com o roteiro."
+            },
+            {
+              "title": "Deixar como está",
+              "text": "Pouco uso e pouco esforço."
+            },
+            {
+              "title": "Ganho rápido",
+              "text": "Decks frequentes e simples: um roteiro curto resolve."
+            }
+          ],
+          "points": [
+            {
+              "label": "Status semanal",
+              "x": 0.85,
+              "y": 0.3
+            },
+            {
+              "label": "Apresentação executiva",
+              "x": 0.7,
+              "y": 0.8
+            },
+            {
+              "label": "Treinamento",
+              "x": 0.25,
+              "y": 0.75
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "content",
+      "title": "Plano de adoção",
+      "message": "Começamos pelo template oficial e expandimos por áreas.",
+      "blocks": [
+        {
+          "type": "timeline",
+          "items": [
+            {
+              "label": "Fase 1",
+              "title": "Template oficial",
+              "text": "Receber o .potx da marca e atualizar o arquivo de tokens."
+            },
+            {
+              "label": "Fase 2",
+              "title": "Piloto",
+              "text": "Duas áreas geram as suas apresentações pela skill."
+            },
+            {
+              "label": "Fase 3",
+              "title": "Distribuição",
+              "text": "Skill publicada para agentes e pessoas do time."
+            },
+            {
+              "label": "Fase 4",
+              "title": "Evolução",
+              "text": "Novos blocos conforme a demanda, sempre versionados."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "content",
+      "title": "Acompanhamento da adoção",
+      "message": "Exemplo de bloco status, com dados ilustrativos.",
+      "blocks": [
+        {
+          "type": "status",
+          "rows": [
+            {
+              "item": "Tokens da marca",
+              "status": "concluido",
+              "owner": "Design",
+              "due": "Set",
+              "note": "Paleta e fontes validadas"
+            },
+            {
+              "item": "Blocos de diagrama",
+              "status": "ok",
+              "owner": "Engenharia",
+              "due": "Out",
+              "note": "hub e diagram no ar"
+            },
+            {
+              "item": "Logo nos layouts",
+              "status": "atencao",
+              "owner": "Design",
+              "due": "Out",
+              "note": "Aguardando arquivos em PNG"
+            },
+            {
+              "item": "Uso pelos agentes",
+              "status": "risco",
+              "owner": "Plataforma",
+              "due": "Nov",
+              "note": "Falta liberar o terminal"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "content",
+      "title": "Uma frase de impacto",
+      "blocks": [
+        {
+          "type": "quote",
+          "text": "A identidade visual é responsabilidade do padrão; o conteúdo é responsabilidade de quem apresenta.",
+          "author": "Princípio do padrão de apresentações"
+        }
+      ]
+    },
+    {
+      "type": "closing",
+      "title": "Obrigado",
+      "subtitle": "Dúvidas e sugestões de novos blocos",
+      "contact": "Sua área"
+    }
+  ]
+}

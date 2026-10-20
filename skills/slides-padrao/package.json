@@ -1,0 +1,19 @@
+{
+  "name": "slides-padrao",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Gera apresentações .pptx com identidade visual padronizada (pptxgenjs).",
+  "main": "scripts/slides.js",
+  "bin": { "slides-padrao": "scripts/build-from-spec.js" },
+  "scripts": {
+    "setup": "node scripts/setup.js",
+    "exemplo": "node scripts/build-from-spec.js examples/exemplo.json examples/exemplo.pptx"
+  },
+  "dependencies": {
+    "pptxgenjs": "^4.0.1",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-icons": "^5.7.0",
+    "sharp": "^0.35.5"
+  }
+}
